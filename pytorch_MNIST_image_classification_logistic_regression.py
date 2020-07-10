@@ -1,3 +1,14 @@
+from torchvision.datasets import MNIST
+import torchvision.transforms as transforms
+from torch.utils.data import random_split
+from torch.utils.data import DataLoader
+import os
+import torch.nn as nn
+import torch
+import torch.nn.functional as F
+import matplotlib.pyplot as plt1
+import matplotlib.pyplot as plt2
+
 # COMPUTE THE ACCURACY OF PREDICTIONS AGAINST LABELS
 def accuracy(outputs, labels):
     probs = F.softmax(outputs, dim=1)
@@ -86,50 +97,66 @@ def predict_image(img, model):
 
 
 if __name__ == '__main__':
-    training_complete=True
+    training_complete=False
     if training_complete:
         pass
     else:
         # DIRECTORY TO STORE IMAGES
         directory = r'D:\01_automation\02_offline\ImageClassification\00_image_datasets\torchvision_datasets'
         # DOWNLOAD DATASET AND CONVERT IMAGES TO PYTORCH TENSORS
-        from torchvision.datasets import MNIST
-        import torchvision.transforms as transforms
         dataset = MNIST(root=directory, download=True, train=True, transform=transforms.ToTensor())
         # SPLIT THE DATASET INTO TRAINING DATASET AND VALIDATION DATASET
-        from torch.utils.data import random_split
         train_ds, val_ds = random_split(dataset, [50000, 10000])
         # len(train_ds), len(val_ds)
         # CONVERT DATASETS TO DATA LOADERS WITH A SPECIFIED BATCH SIZE
         BATCH_SIZE = 128
-        from torch.utils.data import DataLoader
+        INPUT_SIZE = 784
+        NUM_CLASSES = 10
         train_dl = DataLoader(train_ds, BATCH_SIZE, shuffle=True)
         val_dl = DataLoader(val_ds, BATCH_SIZE) # NO NEED TO SHUFFLE VALIDATION DATA LOADER
         model = MnistModel()
-        result0 = evaluate(model, val_loader)
-        history1 = fit(5, 0.001, model, train_loader, val_loader)
-        history2 = fit(5, 0.001, model, train_loader, val_loader)
-        history3 = fit(5, 0.001, model, train_loader, val_loader)
-        history4 = fit(5, 0.001, model, train_loader, val_loader)
-        history5 = fit(5, 0.001, model, train_loader, val_loader)
-        history6 = fit(20, 0.001, model, train_loader, val_loader)
-
+        result0 = evaluate(model, val_dl)
+        print(F'{"*"*15}PRE-TRAINING ACCURACY AND LOSS{"*"*15}')
+        print(f"LOSS: {result0['val_loss']}; ACCURACY: {result0['val_acc']}")
+        print(f'{"*"*30}TRAINING START{"*"*30}')
+        print(f'{"_"*30}Training 1{"_"*30}')
+        history1 = fit(5, 0.005, model, train_dl, val_dl)
+        print(f'{"_"*30}Training 2{"_"*30}')
+        history2 = fit(5, 0.005, model, train_dl, val_dl)
+        print(f'{"_"*30}Training 3{"_"*30}')
+        history3 = fit(5, 0.005, model, train_dl, val_dl)
+        print(f'{"_"*30}Training 4{"_"*30}')
+        history4 = fit(5, 0.001, model, train_dl, val_dl)
+        print(f'{"_"*30}Training 5{"_"*30}')
+        history5 = fit(5, 0.005, model, train_dl, val_dl)
+#         print(f'{"_"*30}Training 6{"_"*30}')
+#         history6 = fit(5, 0.005, model, train_dl, val_dl)
+        history = [result0] + history1 + history2 + history3 + history4 + history5
+        accuracies = [result['val_acc'] for result in history]
+#         print(F'{"*"*15}TRAINING METRICS{"*"*15}')
+        plt1.plot(accuracies, '-x')
+        plt1.xlabel('Epoch')
+        plt1.ylabel('Accuracy')
+        plt1.title('Accuracy vs. No. of Epochs')
+        plt1.imshow()
         
-# #     DISPLAY THE CURRENT ACCURACY OF THE MODEL
-#     test_loader = DataLoader(test_dataset, batch_size=256)
-#     result = evaluate(model, test_loader)
-#     print(result)
+#     DISPLAY THE CURRENT ACCURACY OF THE MODEL
+    test_dataset = MNIST(root=directory, train=False, transform=transforms.ToTensor())
+    test_loader = DataLoader(test_dataset, batch_size=256)
+    result = evaluate(model, test_loader)
+    print(F'{"*"*15}POST-TRAINING ACCURACY AND LOSS{"*"*15}')
+    print(f"LOSS: {result['val_loss']}; ACCURACY: {result['val_acc']}")
 
-#     # SAVE THE MODEL TO A DIRECTORY
-#     import os
-#     trained_model= r'D:\01_automation\02_offline\ImageClassification\00_image_datasets\torchvision_datasets\MNIST\trained_model'
-#     torch.save(model.state_dict(), os.path.join(trained_model, 'mnist-logistic.pth'))
+    # SAVE THE MODEL TO A DIRECTORY
+    trained_model= r'D:\01_automation\02_offline\ImageClassification\00_image_datasets\torchvision_datasets\MNIST\trained_model'
+    torch.save(model.state_dict(), os.path.join(trained_model, 'mnist-logistic_2020-07-10.pth'))
     
     
     model2 = MnistModel()
-    model2.load_state_dict(torch.load(os.path.join(trained_model, 'mnist-logistic.pth')))
+    model2.load_state_dict(torch.load(os.path.join(trained_model, 'mnist-logistic_2020-07-10.pth')))
 #     model2.state_dict()
-    test_dataset = MNIST(root=directory, train=False, transform=transforms.ToTensor())
+    
     img, label = test_dataset[353]
-    plt.imshow(img[0], cmap='gray')
-    print('Label:', label, ', Predicted:', predict_image(img, model2))
+    print(f'{"*"*30}TESTING OUR PREDICTION{"*"*30}')
+    print(f'ACTUAL LABEL: {label}')
+    print(f'PREDICTED IMAGE LABEL: {predict_image(img, model2)}')
