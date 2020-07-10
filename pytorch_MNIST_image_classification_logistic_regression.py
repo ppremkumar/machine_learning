@@ -6,8 +6,7 @@ import os
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-import matplotlib.pyplot as plt1
-import matplotlib.pyplot as plt2
+import matplotlib.pyplot as plt
 
 # COMPUTE THE ACCURACY OF PREDICTIONS AGAINST LABELS
 def accuracy(outputs, labels):
@@ -134,11 +133,10 @@ if __name__ == '__main__':
         history = [result0] + history1 + history2 + history3 + history4 + history5
         accuracies = [result['val_acc'] for result in history]
 #         print(F'{"*"*15}TRAINING METRICS{"*"*15}')
-        plt1.plot(accuracies, '-x')
-        plt1.xlabel('Epoch')
-        plt1.ylabel('Accuracy')
-        plt1.title('Accuracy vs. No. of Epochs')
-        plt1.imshow()
+        plt.plot(accuracies, '-x')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.title('Accuracy vs. No. of Epochs')
         
 #     DISPLAY THE CURRENT ACCURACY OF THE MODEL
     test_dataset = MNIST(root=directory, train=False, transform=transforms.ToTensor())
