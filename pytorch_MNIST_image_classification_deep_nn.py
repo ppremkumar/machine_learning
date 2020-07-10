@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import os
 import torch.nn.functional as F
 import torch.nn as nn
+import torch
 
 def accuracy(outputs, labels):
     probs = F.softmax(outputs, dim=1)
@@ -117,33 +118,54 @@ def predict_image(image, model):
     return preds[0].item()
 
 if __name__ == '__main__':
+    training_complete = False
+    if training_complete:
+        pass
+    else:
+        directory = r'D:\01_automation\02_offline\ImageClassification\00_image_datasets\torchvision_datasets'
+        dataset = MNIST(root=directory, train=True, transform=ToTensor())
+        train_ds, valid_ds = random_split(dataset, [50000, 10000])
+        batch_size = 128
 
-    directory = r'D:\01_automation\02_offline\ImageClassification\00_image_datasets\torchvision_datasets'
-    dataset = MNIST(root=directory, train=True, transform=ToTensor())
-    train_ds, valid_ds = random_split(dataset, [50000, 10000])
-    batch_size = 128
+        train_dl = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+        valid_dl = DataLoader(dataset=valid_ds, batch_size=batch_size, num_workers=4, pin_memory=True)
 
-    train_dl = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
-    valid_dl = DataLoader(dataset=valid_ds, batch_size=batch_size, num_workers=4, pin_memory=True)
+    #     show_batch(train_dl)
+    #     show_batch(valid_dl)
+        input_size = 784
+        hidden_size = 64
+        num_classes = 10
 
-#     show_batch(train_dl)
-#     show_batch(valid_dl)
-    input_size = 784
-    hidden_size = 64
-    num_classes = 10
+        model = MnistModel(in_size=input_size, hidden_size=hidden_size, out_size=num_classes)
+        history = [evaluate(model, valid_dl)]
+        print(F'{"*"*15}PRE-TRAINING ACCURACY AND LOSS{"*"*15}')
+        print(f"LOSS: {history[0]['val_loss']}; ACCURACY: {history[0]['val_acc']}")
+        print(f'{"*"*30}TRAINING START{"*"*30}')
+        print(f'{"_"*30}Training 1{"_"*30}')
+        history += fit(5, 0.5, model, train_dl, valid_dl)
+        print(f'{"_"*30}Training 2{"_"*30}')
+        history += fit(5, 0.1, model, train_dl, valid_dl)
+        accuracies = [result['val_acc'] for result in history]
+#         print(F'{"*"*15}TRAINING METRICS{"*"*15}')
+        plt.plot(accuracies, '-x')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.title('Accuracy vs. No. of Epochs')
 
-    model = MnistModel(in_size=input_size, hidden_size=hidden_size, out_size=num_classes)
-    history = [evaluate(model, valid_dl)]
-    history += fit(5, 0.5, model, train_dl, valid_dl)
-    history += fit(5, 0.1, model, train_dl, valid_dl)
+        # SAVE THE MODEL TO A DIRECTORY    
+        trained_model= r'D:\01_automation\02_offline\ImageClassification\00_image_datasets\torchvision_datasets\MNIST\trained_model'
+        torch.save(model.state_dict(), os.path.join(trained_model, 'mnist_deep_nn_2020-07-07.pth'))
+
+    test_dataset = MNIST(root=directory, train=False, transform=ToTensor())
+    test_loader = DataLoader(test_dataset, batch_size=256)
+    result = evaluate(model, test_loader)
+    print(F'{"*"*15}POST-TRAINING ACCURACY AND LOSS{"*"*15}')
+    print(f"LOSS: {result['val_loss']}; ACCURACY: {result['val_acc']}")
     
-    # SAVE THE MODEL TO A DIRECTORY    
-    trained_model= r'D:\01_automation\02_offline\ImageClassification\00_image_datasets\torchvision_datasets\MNIST\trained_model'
-    torch.save(model.state_dict(), os.path.join(trained_model, 'mnist_deep_nn_2020-07-07.pth'))
-    
+    print(f'{"*"*30}TESTING OUR PREDICTION{"*"*30}')
     model2 = MnistModel(in_size=input_size, hidden_size=hidden_size, out_size=num_classes)
     model2.load_state_dict(torch.load(os.path.join(trained_model, 'mnist_deep_nn_2020-07-07.pth')))
     test_dataset = MNIST(root=directory, train=False, transform=ToTensor())
     img, label = test_dataset[353]
-    plt.imshow(img[0], cmap='gray')
-    print('Label:', label, ', Predicted:', predict_image(img, model2))
+    print(f'ACTUAL IMAGE LABEL: {label}')
+    print(f'PREDICTED IMAGE LABEL: {predict_image(img, model2)}')
